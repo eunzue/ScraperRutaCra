@@ -7,7 +7,7 @@ import urllib
 import dryscrape
 import json
 import sys
-
+import time
 
 
 #Codigo de http://carlosvin.github.io/en/posts/delete-html-tags-py-django.html
@@ -116,7 +116,7 @@ def main():
 		for paso in rutaParseada:
 			fRuta.write(str(parametrosIDS[i][0])+';'+str(parametrosIDS[i][1])+';'+encode(paso['numero_paso'])+';'+encode(paso['descripcion_recorrido'])+';'+encode(paso['distancia_recorrida'])+'\n')
 			#print paso['descripcion_recorrido']
-
+		time.sleep(5)
 		i=i+1
 	fResumen.close()
 	fRuta.close()
