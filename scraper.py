@@ -26,18 +26,31 @@ def parseaResumen(rutaResumen):
 	return resumen
 
 #Metodo que captura el resumen del trayecto
-def getResumen(url):
-	session = dryscrape.Session()
-	session.visit(url)
-	response = session.body()
-	soup = BeautifulSoup(response)
+def getResumen(soup,url):
+	# session = dryscrape.Session()
+	# session.visit(url)
+	# response = session.body()
+	# soup = BeautifulSoup(response)
 	htmlResumen = soup.find_all(class_='adp-summary')
-	#print 'El resumen es '+str(htmlResumen[0])
+
+	while (len(htmlResumen)==0):
+		print 'Error el resumen esta vacio. Esperamos 15 segundos para proseguir'
+		time.sleep(15)
+		session = dryscrape.Session()
+		session.visit(url)
+		response = session.body()
+		soupinterno = BeautifulSoup(response)
+		htmlResumen = soupinterno.find_all(class_='adp-summary')
+		del soupinterno
+		del response
+		del session
+
 	resumenParseado =parseaResumen(str(htmlResumen[0]))
 	resumenParseadaJSON = {
-		'distancia': resumenParseado[0],
-		'tiempo': resumenParseado[1]
+		'distancia': resumenParseado[0], #TODO meter esta distancia en km para así poder hacer los cálculos de las medias sin morirnos en el intento
+		'tiempo': resumenParseado[1]#TODO meter el tiempo en minutos para así poder hacer los cálculos de las medias sin morirnos en el intento
 	}
+	
 	return json.dumps(resumenParseadaJSON)
 
 #Metodo que parsea  un paso de ruta, que estara separada por &
@@ -72,20 +85,34 @@ def ruta(rutaGoogle):
 	return rutaParseada
 
 #metodo que captura los pasos de la ruta
-def getRuta(url):
-	session = dryscrape.Session()
-	session.visit(url)
-	response = session.body()
-	soup = BeautifulSoup(response)
-	htmlResumen = soup.find_all(class_='adp-directions')
-	rutaParseada = ruta(str(htmlResumen[0]))
+def getRuta(soup, url):
+	# session = dryscrape.Session()
+	# session.visit(url)
+	# response = session.body()
+	# soup = BeautifulSoup(response)
+	htmlRuta = soup.find_all(class_='adp-directions')
+	while (len(htmlRuta)==0):
+		print 'Error la ruta esta vacio. Esperamos 15 segundos para proseguir y repetimos'
+		time.sleep(15)
+		session = dryscrape.Session()
+		session.visit(url)
+		response = session.body()
+		soupinterno = BeautifulSoup(response)
+		htmlRuta = soupinterno.find_all(class_='adp-summary')
+		del soupinterno
+		del response
+		del session
+	rutaParseada = ruta(str(htmlRuta[0]))
 	rutaPorPasosJSON=[]
-
+	
 	for paso in rutaParseada:
+		
+		if 'El destino' in paso[1] :
+			paso[1]=paso[1].replace('El destino', '. El destino')
 		pasoJSON={
 			'numero_paso':paso[0].replace('.', ''),
-			'descripcion_recorrido':paso[1],
-			'distancia_recorrida':paso[2]
+			'descripcion_recorrido':paso[1], 
+			'distancia_recorrida':paso[2] 
 		}
 		rutaPorPasosJSON.append(pasoJSON)
 	return json.dumps(rutaPorPasosJSON)
@@ -105,19 +132,30 @@ def main():
 	#parametrosIDS=[[74, 22001]]
 	#resumen=getResumen('http://preopendata.aragon.es/apps/cras/scrapea_trayecto/?filtroCRA=1&filtroMuni=50199')
 	#print 'El resumen es '+str(resumen)
+	#parametrosURL = ['?filtroCRA=5&filtroMuni=50004', '?filtroCRA=18&filtroMuni=50013', '?filtroCRA=23&filtroMuni=50022', '?filtroCRA=24&filtroMuni=50023', '?filtroCRA=10&filtroMuni=50027', '?filtroCRA=26&filtroMuni=50029', '?filtroCRA=17&filtroMuni=50032', '?filtroCRA=25&filtroMuni=50034', '?filtroCRA=24&filtroMuni=50039', '?filtroCRA=18&filtroMuni=50043', '?filtroCRA=11&filtroMuni=50044', '?filtroCRA=4&filtroMuni=50051', '?filtroCRA=18&filtroMuni=50053', '?filtroCRA=7&filtroMuni=50056', '?filtroCRA=23&filtroMuni=50059', '?filtroCRA=16&filtroMuni=50061', '?filtroCRA=22&filtroMuni=50062', '?filtroCRA=18&filtroMuni=50064', '?filtroCRA=13&filtroMuni=50071', '?filtroCRA=4&filtroMuni=50078', '?filtroCRA=26&filtroMuni=50079', '?filtroCRA=25&filtroMuni=50081', '?filtroCRA=17&filtroMuni=50086', '?filtroCRA=5&filtroMuni=50088', '?filtroCRA=2&filtroMuni=50090', '?filtroCRA=21&filtroMuni=50095', '?filtroCRA=5&filtroMuni=50098', '?filtroCRA=20&filtroMuni=50100', '?filtroCRA=19&filtroMuni=50102', '?filtroCRA=1&filtroMuni=50104', '?filtroCRA=18&filtroMuni=50107', '?filtroCRA=17&filtroMuni=50110', '?filtroCRA=16&filtroMuni=50113', '?filtroCRA=9&filtroMuni=50116', '?filtroCRA=48&filtroMuni=50117', '?filtroCRA=15&filtroMuni=50119', '?filtroCRA=14&filtroMuni=50121', '?filtroCRA=18&filtroMuni=50123', '?filtroCRA=13&filtroMuni=50125', '?filtroCRA=13&filtroMuni=50129', '?filtroCRA=14&filtroMuni=50130', '?filtroCRA=24&filtroMuni=50136', '?filtroCRA=12&filtroMuni=50137', '?filtroCRA=24&filtroMuni=50139', '?filtroCRA=11&filtroMuni=50146', '?filtroCRA=18&filtroMuni=50147', '?filtroCRA=4&filtroMuni=50148', '?filtroCRA=11&filtroMuni=50150', '?filtroCRA=20&filtroMuni=50151', '?filtroCRA=10&filtroMuni=50153', '?filtroCRA=10&filtroMuni=50156', '?filtroCRA=6&filtroMuni=50157', '?filtroCRA=9&filtroMuni=50159', '?filtroCRA=9&filtroMuni=50162', '?filtroCRA=22&filtroMuni=50164', '?filtroCRA=17&filtroMuni=50166', '?filtroCRA=9&filtroMuni=50169', '?filtroCRA=1&filtroMuni=50170', '?filtroCRA=9&filtroMuni=50176', '?filtroCRA=3&filtroMuni=50177', '?filtroCRA=8&filtroMuni=50178', '?filtroCRA=24&filtroMuni=50179', '?filtroCRA=7&filtroMuni=50181', '?filtroCRA=8&filtroMuni=50183', '?filtroCRA=19&filtroMuni=50189', '?filtroCRA=6&filtroMuni=50190', '?filtroCRA=13&filtroMuni=50192', '?filtroCRA=1&filtroMuni=50193', '?filtroCRA=1&filtroMuni=50199', '?filtroCRA=5&filtroMuni=50200', '?filtroCRA=9&filtroMuni=50201', '?filtroCRA=12&filtroMuni=50206', '?filtroCRA=20&filtroMuni=50207', '?filtroCRA=11&filtroMuni=50211', '?filtroCRA=16&filtroMuni=50216', '?filtroCRA=11&filtroMuni=50228', '?filtroCRA=4&filtroMuni=50230', '?filtroCRA=11&filtroMuni=50231', '?filtroCRA=53&filtroMuni=50232', '?filtroCRA=6&filtroMuni=50234', '?filtroCRA=3&filtroMuni=50241', '?filtroCRA=3&filtroMuni=50243', '?filtroCRA=16&filtroMuni=50249', '?filtroCRA=9&filtroMuni=50253', '?filtroCRA=14&filtroMuni=50254', '?filtroCRA=17&filtroMuni=50255', '?filtroCRA=4&filtroMuni=50267', '?filtroCRA=11&filtroMuni=50269', '?filtroCRA=2&filtroMuni=50271', '?filtroCRA=15&filtroMuni=50278', '?filtroCRA=6&filtroMuni=50280', '?filtroCRA=9&filtroMuni=50284', '?filtroCRA=1&filtroMuni=50285', '?filtroCRA=8&filtroMuni=50287', '?filtroCRA=26&filtroMuni=50293', '?filtroCRA=15&filtroMuni=50296', '?filtroCRA=12&filtroMuni=50298']
+	#parametrosIDS=[[5, 50004], [18, 50013], [23, 50022], [24, 50023], [10, 50027], [26, 50029], [17, 50032], [25, 50034], [24, 50039], [18, 50043], [11, 50044], [4, 50051], [18, 50053], [7, 50056], [23, 50059], [16, 50061], [22, 50062], [18, 50064], [13, 50071], [4, 50078], [26, 50079], [25, 50081], [17, 50086], [5, 50088], [2, 50090], [21, 50095], [5, 50098], [20, 50100], [19, 50102], [1, 50104], [18, 50107], [17, 50110], [16, 50113], [9, 50116], [48, 50117], [15, 50119], [14, 50121], [18, 50123], [13, 50125], [13, 50129], [14, 50130], [24, 50136], [12, 50137], [24, 50139], [11, 50146], [18, 50147], [4, 50148], [11, 50150], [20, 50151], [10, 50153], [10, 50156], [6, 50157], [9, 50159], [9, 50162], [22, 50164], [17, 50166], [9, 50169], [1, 50170], [9, 50176], [3, 50177], [8, 50178], [24, 50179], [7, 50181], [8, 50183], [19, 50189], [6, 50190], [13, 50192], [1, 50193], [1, 50199], [5, 50200], [9, 50201], [12, 50206], [20, 50207], [11, 50211], [16, 50216], [11, 50228], [4, 50230], [11, 50231], [53, 50232], [6, 50234], [3, 50241], [3, 50243], [16, 50249], [9, 50253], [14, 50254], [17, 50255], [4, 50267], [11, 50269], [2, 50271], [15, 50278], [6, 50280], [9, 50284], [1, 50285], [8, 50287], [26, 50293], [15, 50296], [12, 50298]]
+	
+	print 'Se vam a buscar '+ str(len(parametrosURL))+' rutas'
 	fResumen=open("resumen.csv","w")
 	fRuta=open("ruta.csv","w")
 	i=0
 	for parametros in parametrosURL:
 		print URL+parametros
-		resumen=json.loads(getResumen(URL+parametros))
-		rutaParseada = json.loads(getRuta(URL+parametros))
-		fResumen.write(''+str(parametrosIDS[i][0])+';'+str(parametrosIDS[i][1])+';'+resumen['distancia']+';'+resumen['tiempo']+'\n')
+		session = dryscrape.Session()
+		session.visit(URL+parametros)
+		response = session.body()
+		soup = BeautifulSoup(response)
+		resumen=json.loads(getResumen(soup, URL+parametros))
+		rutaParseada = json.loads(getRuta(soup, URL+parametros))
+		fResumen.write(str(parametrosIDS[i][0])+';'+str(parametrosIDS[i][1])+';'+resumen['distancia']+';'+resumen['tiempo']+'\n')
 		for paso in rutaParseada:
 			fRuta.write(str(parametrosIDS[i][0])+';'+str(parametrosIDS[i][1])+';'+encode(paso['numero_paso'])+';'+encode(paso['descripcion_recorrido'])+';'+encode(paso['distancia_recorrida'])+'\n')
 			#print paso['descripcion_recorrido']
 		time.sleep(5)
 		i=i+1
+		del soup
+		del response
+		del session
 	fResumen.close()
 	fRuta.close()
 main()
